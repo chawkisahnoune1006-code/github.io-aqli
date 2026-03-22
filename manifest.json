@@ -5,20 +5,30 @@
   "start_url": "/github.io-aqli/index.html",
   "scope": "/github.io-aqli/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#070b12",
   "theme_color": "#070b12",
   "orientation": "portrait-primary",
   "lang": "ar",
   "dir": "rtl",
-  "categories": ["education", "productivity"],
+  "categories": ["education", "productivity", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "إضافة بطاقة",
+      "short_name": "إضافة",
+      "description": "أضف معرفة جديدة",
+      "url": "/github.io-aqli/index.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
-    { "src": "/github.io-aqli/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },
-    { "src": "/github.io-aqli/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any" },
-    { "src": "/github.io-aqli/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
-    { "src": "/github.io-aqli/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
-    { "src": "/github.io-aqli/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
-    { "src": "/github.io-aqli/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/github.io-aqli/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
-    { "src": "/github.io-aqli/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

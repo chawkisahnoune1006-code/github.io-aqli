@@ -1388,42 +1388,57 @@ function generateQuestion(card, variant){
 
 // Smart local evaluation
 function localEvaluate(card, answer){
-  if(!answer || answer.trim().length < 3) return { score: 0, feedback: 'لم تكتب إجابة.' };
+  if(!answer || answer.trim().length < 3) return { score: 0, feedback: '⚠️ لم تكتب إجابة — حاول مجدداً.' };
 
-  const correctWords = card.body.toLowerCase().split(/[\s،,\.]+/).filter(w=>w.length>3);
-  const answerWords  = answer.toLowerCase().split(/[\s،,\.]+/).filter(w=>w.length>2);
-  const answerText   = answer.toLowerCase();
+  const correctText  = card.body.toLowerCase();
+  const answerText   = answer.toLowerCase().trim();
 
-  // Key concepts matching
+  // Extract meaningful words (ignore short words)
+  const correctWords = correctText.split(/[\s،,\.\n\-:]+/).filter(w=>w.length>3);
+  const answerWords  = answerText.split(/[\s،,\.\n\-:]+/).filter(w=>w.length>2);
+
+  // Matched keywords
   const matched = correctWords.filter(w => answerText.includes(w));
   const matchRate = correctWords.length > 0 ? matched.length / correctWords.length : 0;
 
-  // Length check — too short = incomplete
-  const lengthOk = answer.trim().length >= 10;
+  // Length check
+  const lengthOk = answerText.length >= 8;
 
+  // Check if answer contains key concepts from title
+  const titleWords = card.title.toLowerCase().split(/[\s،,\.\?]+/).filter(w=>w.length>3);
+  const titleMatch = titleWords.filter(w=>answerText.includes(w)).length;
+
+  // Scoring — more lenient
   let score = 0;
-  if(matchRate >= 0.5 && lengthOk) score = 5;       // excellent
-  else if(matchRate >= 0.3 && lengthOk) score = 3;  // good
-  else if(matchRate >= 0.15) score = 1;              // partial
-  else score = 0;                                     // wrong
+  if(matchRate >= 0.35 && lengthOk) score = 5;
+  else if(matchRate >= 0.2 && lengthOk) score = 3;
+  else if(matchRate >= 0.1 || (lengthOk && titleMatch > 0)) score = 2;
+  else if(lengthOk) score = 1;
+  else score = 0;
 
-  // Generate rich feedback
-  const missedConcepts = correctWords.filter(w=>!answerText.includes(w)).slice(0,3);
+  // Missed concepts for feedback
+  const missedConcepts = correctWords
+    .filter(w=>!answerText.includes(w) && w.length>4)
+    .slice(0,4);
 
+  // Build clear feedback
   let feedback = '';
+  const scoreLabel = score >= 4 ? '✅ إجابة ممتازة!' : score >= 3 ? '✅ إجابة جيدة!' : score >= 2 ? '🟡 إجابة جزئية' : '❌ إجابة غير كافية';
+  const scoreBar = '█'.repeat(score) + '░'.repeat(5-score) + ` ${score}/5`;
+
+  feedback += `${scoreLabel}\n${scoreBar}\n\n`;
+
   if(score >= 4){
-    const praises = ['ممتاز! إجابة قوية 💪','رائع! أنت تفهم هذا جيداً 🌟','صحيح تماماً! استمر هكذا ✅'];
-    feedback = praises[Math.floor(Math.random()*praises.length)];
-    feedback += `\n\n✅ **الإجابة الكاملة:**\n${card.body}`;
+    const praises = ['رائع! أنت تتقن هذا المفهوم 💪','ممتاز! استمر هكذا 🌟','صحيح تماماً! عقل نشيط ✅'];
+    feedback += praises[Math.floor(Math.random()*praises.length)] + '\n\n';
   } else if(score >= 2){
-    feedback = `👍 إجابة جيدة جزئياً، لكن يمكن أن تكون أكمل.\n\n`;
-    if(missedConcepts.length) feedback += `⚠️ **مفاهيم ناقصة:** ${missedConcepts.join('، ')}\n\n`;
-    feedback += `✅ **الإجابة الكاملة:**\n${card.body}`;
+    if(missedConcepts.length) feedback += `⚠️ **نقاط ناقصة:** ${missedConcepts.slice(0,3).join('، ')}\n\n`;
   } else {
-    feedback = `❌ إجابة غير كافية — راجع هذا المفهوم.\n\n`;
-    feedback += `📖 **الإجابة الصحيحة:**\n${card.body}`;
-    if(card.linkConcept) feedback += `\n\n🔗 **تذكر:** ${card.linkConcept}`;
+    feedback += `راجع هذا المفهوم مجدداً بعناية.\n\n`;
   }
+
+  feedback += `📖 **الإجابة الكاملة:**\n${card.body}`;
+  if(card.linkConcept) feedback += `\n\n🔗 **علاقته بأشياء أخرى:** ${card.linkConcept}`;
 
   return { score, feedback, matched: matched.length, total: correctWords.length };
 }
@@ -1435,9 +1450,8 @@ function sendMessage(){
   if(!text) return;
   inp.value='';
   addUserMessage(text);
-
-  // Small delay for natural feel
   addTypingIndicator();
+
   setTimeout(()=>processUserMessage(text), 400 + Math.random()*300);
 }
 
@@ -1542,11 +1556,9 @@ function handleQuizAnswer(answer){
 
   tutorSession.awaitingAnswer = false;
 
-  // Show feedback + auto next prompt
-  const sessionInfo = `\n\n📊 جلستك: **${tutorSession.sessionScore}/${tutorSession.sessionTotal}** صحيح`;
-  const nextPrompt = result.score >= 3
-    ? '\n\nاكتب **"التالي"** للسؤال القادم 🚀'
-    : '\n\nاكتب **"التالي"** للمحاولة مع سؤال جديد، أو **"كرر"** لنفس السؤال.';
+  // Show feedback + clear next steps
+  const sessionInfo = `\n\n📊 **نتيجة الجلسة:** ${tutorSession.sessionScore}/${tutorSession.sessionTotal} صحيح`;
+  const nextPrompt = '\n\n─────────────────\n⬇️ اضغط أحد الأزرار أدناه أو اكتب:\n**"التالي"** — سؤال جديد\n**"كرر"** — نفس السؤال\n**"نتيجة"** — إحصائياتك';
 
   addAIMessage(result.feedback + sessionInfo + nextPrompt);
 }
