@@ -340,6 +340,7 @@ const db   = firebase.firestore();
       </div>
       <div id="home-due-list"></div>
     </div>
+    <div id="home-goals-section"></div>
     <div class="home-section">
       <div class="home-section-header">
         <div class="home-section-title">🕐 آخر ما أضفته</div>
@@ -485,7 +486,7 @@ const db   = firebase.firestore();
   <button class="nav-btn active btn" id="nav-home" onclick="showScreen('home')"><div class="nav-icon">🏠</div>الرئيسية</button>
   <button class="nav-btn btn" id="nav-library" onclick="showScreen('library')"><div class="nav-icon">📚</div>المكتبة</button>
   <button class="nav-btn btn" id="nav-add" onclick="openAddItem()"><div class="nav-icon">➕</div>إضافة</button>
-  <button class="nav-btn btn" id="nav-ai" onclick="showScreen('ai')"><div class="nav-icon">🤖</div>المدرب</button>
+  <button class="nav-btn btn" id="nav-goals" onclick="showScreen('goals')"><div class="nav-icon">🎯</div>أهدافي</button>
   <button class="nav-btn btn" id="nav-paper" onclick="startPaperMode()"><div class="nav-icon">📝</div>ورقة</button>
 </div>
 
@@ -643,6 +644,70 @@ const db   = firebase.firestore();
   </div>
 </div>
 
+<!-- ═══ GOALS & CHALLENGES ══════════════════════ -->
+<div class="screen" id="screen-goals">
+  <div class="topbar">
+    <div style="width:40px"></div>
+    <div class="topbar-title">🎯 الأهداف والتحديات</div>
+    <button onclick="openGoalModal()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--gold);font-size:12px;cursor:pointer;font-family:'Tajawal',sans-serif">+ هدف</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px 16px">
+
+    <!-- التحدي الأسبوعي -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:800;color:var(--text2);margin-bottom:8px">⚡ التحدي الأسبوعي</div>
+      <div id="weekly-challenge-card"></div>
+    </div>
+
+    <!-- الأهداف النشطة -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:800;color:var(--text2);margin-bottom:8px">🎯 أهدافي النشطة</div>
+      <div id="goals-list"></div>
+    </div>
+
+    <!-- الأهداف المنجزة -->
+    <div>
+      <div style="font-size:13px;font-weight:800;color:var(--text2);margin-bottom:8px">✅ أهداف منجزة</div>
+      <div id="goals-done-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD GOAL MODAL -->
+<div class="modal-overlay" id="add-goal-modal" onclick="if(event.target.id==='add-goal-modal')closeModal('add-goal-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">🎯 هدف جديد</div>
+      <button class="modal-close btn" onclick="closeModal('add-goal-modal')">✕</button>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">اسم الهدف *</div>
+      <input id="goal-title" placeholder="مثال: إتقان أساسيات الجودو" style="width:100%"/>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">المجلد المرتبط</div>
+      <select id="goal-folder" style="width:100%;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:var(--rs);padding:10px 13px;font-family:'Tajawal',sans-serif;font-size:13px">
+        <option value="all">كل المكتبة</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">عدد البطاقات المستهدف</div>
+      <input id="goal-target" type="number" placeholder="مثال: 50" min="1" style="width:100%"/>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">تاريخ الإنجاز</div>
+      <input id="goal-date" type="date" style="width:100%;direction:ltr"/>
+    </div>
+
+    <button onclick="saveGoal()" style="width:100%;padding:14px;border-radius:var(--r);background:linear-gradient(135deg,var(--gold2),var(--gold));border:none;color:#000;font-size:14px;font-weight:900;cursor:pointer;font-family:'Tajawal',sans-serif">حفظ الهدف ✓</button>
+  </div>
+</div>
+
 </div><!-- #app -->
 
 <script>
@@ -665,7 +730,10 @@ function freshDB(){
     dailyTest: { date:'', done:false, score:0, total:0 },
     chatHistory: [],
     aiMode: 'quiz',
-    aiSubject: 'all'
+    aiSubject: 'all',
+    goals: [],        // أهداف المستخدم
+    challenges: [],   // التحديات الأسبوعية
+    weeklyStats: {}   // إحصائيات أسبوعية
   };
 }
 
@@ -853,6 +921,7 @@ function showScreen(name){
   if(name==='home')    renderHome();
   if(name==='library') renderLibrary();
   if(name==='ai')      renderAI();
+  if(name==='goals')   renderGoals();
   if(name==='paper')   {} // rendered by startPaperMode
 }
 
@@ -911,8 +980,8 @@ function renderHome(){
   // Recent
   const recent=getAllItems().sort((a,b)=>b.createdAt-a.createdAt);
   const recEl=document.getElementById('home-recent-list');
-  if(!recent.length){ recEl.innerHTML=`<div style="color:var(--text3);font-size:13px;padding:8px">لم تضف شيئاً بعد</div>`; return; }
-  recEl.innerHTML=recent.slice(0,3).map(item=>{
+  if(!recent.length){ recEl.innerHTML=`<div style="color:var(--text3);font-size:13px;padding:8px">لم تضف شيئاً بعد</div>`; }
+  else recEl.innerHTML=recent.slice(0,3).map(item=>{
     const f=DB.folders[item.folderId];
     return `<div class="card-mini fadein" onclick="openItemModal('${item.id}')">
       <div class="card-mini-left">
@@ -922,6 +991,10 @@ function renderHome(){
       <div class="card-mini-badge" style="background:${TYPE_COLORS[item.type]||'var(--blue)'}22;color:${TYPE_COLORS[item.type]||'var(--blue)'}">${TYPE_LABELS[item.type]?.split(' ')[0]||'📝'}</div>
     </div>`;
   }).join('');
+
+  // Goals section
+  const goalsEl = document.getElementById('home-goals-section');
+  if(goalsEl) goalsEl.innerHTML = renderHomeGoals();
 }
 
 function toggleFocus(fid){
@@ -2091,6 +2164,217 @@ function paperDone(){
       <button onclick="startPaperMode()" style="width:100%;padding:14px;border-radius:var(--r);background:var(--purple);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif">🔄 جولة جديدة</button>
       <button onclick="showScreen('home')" style="width:100%;padding:14px;border-radius:var(--r);background:var(--bg4);border:1px solid var(--border2);color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif">🏠 الرئيسية</button>
     </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// GOALS & CHALLENGES
+// ══════════════════════════════════════════════════
+
+// ── Weekly Challenges ──
+const WEEKLY_CHALLENGES = [
+  { id:'w1', emoji:'📚', title:'مراجع نشيط', desc:'راجع 20 بطاقة هذا الأسبوع', type:'review', target:20, xp:50 },
+  { id:'w2', emoji:'🔥', title:'7 أيام متواصلة', desc:'سجّل يومياً لمدة 7 أيام', type:'streak', target:7, xp:100 },
+  { id:'w3', emoji:'💡', title:'باني المعرفة', desc:'أضف 10 بطاقات جديدة', type:'add', target:10, xp:60 },
+  { id:'w4', emoji:'🎯', title:'المتقن', desc:'احصل على تقييم "سهل" 15 مرة', type:'easy', target:15, xp:80 },
+  { id:'w5', emoji:'📝', title:'محرك الورقة', desc:'أكمل 3 جلسات ورقة', type:'paper', target:3, xp:70 },
+  { id:'w6', emoji:'🏆', title:'متعدد المجالات', desc:'راجع من 3 مجالات مختلفة', type:'domains', target:3, xp:90 },
+];
+
+function getWeekStr(){
+  const d = new Date();
+  const start = new Date(d.setDate(d.getDate() - d.getDay()));
+  return start.toISOString().slice(0,10);
+}
+
+function getCurrentChallenge(){
+  const week = getWeekStr();
+  if(!DB.challenges) DB.challenges = [];
+  let ch = DB.challenges.find(c=>c.week===week);
+  if(!ch){
+    // Pick random challenge for this week based on week number
+    const weekNum = Math.floor(Date.now()/(7*24*60*60*1000));
+    const template = WEEKLY_CHALLENGES[weekNum % WEEKLY_CHALLENGES.length];
+    ch = { ...template, week, progress:0, done:false };
+    DB.challenges.push(ch);
+    saveDB();
+  }
+  return ch;
+}
+
+function updateChallengeProgress(type, amount=1){
+  const ch = getCurrentChallenge();
+  if(ch.done) return;
+  if(ch.type===type){
+    ch.progress = Math.min((ch.progress||0) + amount, ch.target);
+    if(ch.progress >= ch.target && !ch.done){
+      ch.done = true;
+      DB.totalXP = (DB.totalXP||0) + ch.xp;
+      setTimeout(()=>{ burst(); showToast(`🏆 تحدي مكتمل! +${ch.xp} XP`); }, 500);
+    }
+    // Update in DB
+    const idx = DB.challenges.findIndex(c=>c.week===ch.week);
+    if(idx>=0) DB.challenges[idx] = ch;
+    saveDB();
+  }
+}
+
+// ── Goals ──
+function openGoalModal(){
+  // Fill folder select
+  const sel = document.getElementById('goal-folder');
+  sel.innerHTML = '<option value="all">كل المكتبة</option>';
+  Object.values(DB.folders).filter(f=>f.id!=='root').forEach(f=>{
+    sel.innerHTML += `<option value="${f.id}">${f.emoji} ${f.name}</option>`;
+  });
+  // Set default date to 30 days from now
+  const d = new Date(); d.setDate(d.getDate()+30);
+  document.getElementById('goal-date').value = d.toISOString().slice(0,10);
+  document.getElementById('goal-title').value = '';
+  document.getElementById('goal-target').value = '';
+  openModal('add-goal-modal');
+}
+
+function saveGoal(){
+  const title = document.getElementById('goal-title').value.trim();
+  const target = parseInt(document.getElementById('goal-target').value);
+  const date = document.getElementById('goal-date').value;
+  const folderId = document.getElementById('goal-folder').value;
+  if(!title){ showToast('⚠️ أدخل اسم الهدف'); return; }
+  if(!target||target<1){ showToast('⚠️ أدخل عدد البطاقات المستهدف'); return; }
+  if(!date){ showToast('⚠️ اختر تاريخ الإنجاز'); return; }
+
+  if(!DB.goals) DB.goals = [];
+  DB.goals.push({
+    id: 'g'+Date.now(),
+    title, target, date, folderId,
+    createdAt: todayStr(),
+    done: false
+  });
+  saveDB();
+  closeModal('add-goal-modal');
+  renderGoals();
+  showToast('✅ تم إضافة الهدف!');
+}
+
+function deleteGoal(id){
+  DB.goals = (DB.goals||[]).filter(g=>g.id!==id);
+  saveDB(); renderGoals();
+}
+
+function calcGoalProgress(goal){
+  const all = getAllItems();
+  const pool = goal.folderId==='all' ? all : all.filter(i=>isInFolder(i,goal.folderId));
+  const reviewed = pool.filter(i=>(i.reviews||0)>0).length;
+  return { current: reviewed, total: pool.length, target: goal.target };
+}
+
+function renderGoals(){
+  if(!DB.goals) DB.goals = [];
+
+  // Weekly challenge
+  const ch = getCurrentChallenge();
+  const chPct = Math.round((ch.progress||0)/ch.target*100);
+  document.getElementById('weekly-challenge-card').innerHTML = `
+    <div style="background:${ch.done?'var(--green)22':'linear-gradient(135deg,var(--gold)11,var(--orange)11)'};border:1px solid ${ch.done?'var(--green)':'var(--gold)'}44;border-radius:var(--r);padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:22px;margin-bottom:4px">${ch.emoji}</div>
+          <div style="font-size:15px;font-weight:900">${ch.title}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${ch.desc}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:24px;font-weight:900;color:var(--gold)">${ch.done?'✅':chPct+'%'}</div>
+          <div style="font-size:10px;color:var(--text3)">${ch.progress||0}/${ch.target}</div>
+          <div style="font-size:10px;color:var(--gold);font-weight:700">+${ch.xp} XP</div>
+        </div>
+      </div>
+      <div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${chPct}%;background:${ch.done?'var(--green)':'linear-gradient(90deg,var(--gold2),var(--gold))'};border-radius:3px;transition:width .5s"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:left">
+        ينتهي: ${new Date(new Date().setDate(new Date().getDate()+(6-new Date().getDay()))).toLocaleDateString('ar-DZ')}
+      </div>
+    </div>`;
+
+  // Active goals
+  const active = DB.goals.filter(g=>!g.done);
+  const el = document.getElementById('goals-list');
+  if(!active.length){
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">لا توجد أهداف نشطة<br>اضغط "+ هدف" لإضافة هدف جديد</div>`;
+  } else {
+    el.innerHTML = active.map(g=>{
+      const prog = calcGoalProgress(g);
+      const pct = Math.min(100, Math.round((prog.current/g.target)*100));
+      const daysLeft = Math.ceil((new Date(g.date)-new Date())/(1000*60*60*24));
+      const daysColor = daysLeft<=3?'var(--red)':daysLeft<=7?'var(--gold)':'var(--text3)';
+      const f = g.folderId!=='all' ? DB.folders[g.folderId] : null;
+      // Auto complete check
+      if(prog.current >= g.target){ g.done=true; saveDB(); }
+      return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:800;margin-bottom:3px">${g.title}</div>
+            <div style="font-size:11px;color:var(--text3)">${f?f.emoji+' '+f.name:'📚 كل المكتبة'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="font-size:11px;color:${daysColor};font-weight:700">${daysLeft>0?daysLeft+' يوم':'انتهى!'}</div>
+            <button onclick="deleteGoal('${g.id}')" style="background:#e0555522;border:none;color:var(--red);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:12px">×</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px">
+          <span>${prog.current} من ${g.target} بطاقة</span>
+          <span style="font-weight:700;color:${pct>=80?'var(--green)':pct>=50?'var(--blue)':'var(--text2)'}">${pct}%</span>
+        </div>
+        <div style="height:8px;background:var(--bg4);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${pct>=80?'var(--green)':pct>=50?'var(--blue)':'var(--purple)'};border-radius:4px;transition:width .5s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px">
+          إجمالي ${prog.total} بطاقة في المجلد · الهدف ${g.date}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Done goals
+  const done = DB.goals.filter(g=>g.done);
+  const doneEl = document.getElementById('goals-done-list');
+  if(!done.length){ doneEl.innerHTML=''; return; }
+  doneEl.innerHTML = done.map(g=>`
+    <div style="background:var(--green)11;border:1px solid var(--green)33;border-radius:var(--rs);padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:700">✅ ${g.title}</div>
+        <div style="font-size:11px;color:var(--text3)">أنجزت ${g.target} بطاقة</div>
+      </div>
+      <button onclick="deleteGoal('${g.id}')" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:14px">×</button>
+    </div>`).join('');
+}
+
+// Add goals section to home screen
+function renderHomeGoals(){
+  if(!DB.goals||!DB.goals.length) return '';
+  const active = DB.goals.filter(g=>!g.done).slice(0,2);
+  if(!active.length) return '';
+  return `<div class="home-section">
+    <div class="home-section-header">
+      <div class="home-section-title">🎯 تقدم أهدافي</div>
+      <div class="home-section-more" onclick="showScreen('goals')">عرض الكل</div>
+    </div>
+    ${active.map(g=>{
+      const prog = calcGoalProgress(g);
+      const pct = Math.min(100,Math.round((prog.current/g.target)*100));
+      const daysLeft = Math.ceil((new Date(g.date)-new Date())/(1000*60*60*24));
+      return `<div class="card-mini" onclick="showScreen('goals')">
+        <div class="card-mini-left">
+          <div class="card-mini-title">${g.title}</div>
+          <div style="margin-top:5px;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;width:160px">
+            <div style="height:100%;width:${pct}%;background:var(--purple);border-radius:3px"></div>
+          </div>
+          <div class="card-mini-path">${prog.current}/${g.target} · ${daysLeft>0?daysLeft+' يوم متبقي':'انتهى!'}</div>
+        </div>
+        <div style="font-size:16px;font-weight:900;color:var(--purple)">${pct}%</div>
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 // ── Service Worker (آخر شيء) ──
