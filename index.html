@@ -481,12 +481,12 @@ const db   = firebase.firestore();
 </div>
 
 <!-- NAVBAR -->
-<div class="navbar">
+<div class="navbar" style="grid-template-columns:repeat(5,1fr)">
   <button class="nav-btn active btn" id="nav-home" onclick="showScreen('home')"><div class="nav-icon">🏠</div>الرئيسية</button>
   <button class="nav-btn btn" id="nav-library" onclick="showScreen('library')"><div class="nav-icon">📚</div>المكتبة</button>
   <button class="nav-btn btn" id="nav-add" onclick="openAddItem()"><div class="nav-icon">➕</div>إضافة</button>
   <button class="nav-btn btn" id="nav-ai" onclick="showScreen('ai')"><div class="nav-icon">🤖</div>المدرب</button>
-  <button class="nav-btn btn" id="nav-test" onclick="startDailyTest()"><div class="nav-icon">⏰</div>اختبار</button>
+  <button class="nav-btn btn" id="nav-paper" onclick="startPaperMode()"><div class="nav-icon">📝</div>ورقة</button>
 </div>
 
 <!-- NEW FOLDER MODAL -->
@@ -578,6 +578,66 @@ const db   = firebase.firestore();
     </div>
     <div id="import-status" style="display:none;padding:10px;background:var(--bg4);border-radius:10px;font-size:12px;color:var(--green);margin-bottom:10px"></div>
     <button class="save-big-btn btn" id="import-confirm-btn" onclick="confirmImport()" style="display:none">✅ استيراد الآن</button>
+  </div>
+</div>
+
+<!-- ═══ PAPER MODE ════════════════════════════════ -->
+<div class="screen" id="screen-paper">
+  <div class="topbar">
+    <button class="topbar-back btn" onclick="showScreen('home')">✕ إنهاء</button>
+    <div class="topbar-title">📝 وضع الورقة</div>
+    <div style="font-size:12px;color:var(--text3)" id="paper-counter">0/0</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;padding:16px;gap:12px;overflow-y:auto">
+
+    <!-- Progress -->
+    <div style="background:var(--bg3);border-radius:var(--r);padding:12px">
+      <div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:6px">
+        <div id="paper-progress-fill" style="height:100%;background:linear-gradient(90deg,var(--purple),var(--blue));border-radius:3px;transition:width .4s;width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
+        <span id="paper-q-num">سؤال 1</span>
+        <span id="paper-score-display">✅ 0 &nbsp; ❌ 0</span>
+      </div>
+    </div>
+
+    <!-- Question Card -->
+    <div id="paper-card" style="background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:20px;flex:1;min-height:200px;display:flex;flex-direction:column;gap:12px">
+      <div id="paper-card-path" style="font-size:10px;color:var(--text3);font-weight:700"></div>
+      <div id="paper-card-type" style="font-size:11px;color:var(--purple);font-weight:700"></div>
+      <div id="paper-card-question" style="font-size:16px;font-weight:800;line-height:1.6;color:var(--text)"></div>
+      <img id="paper-card-img" style="width:100%;max-height:200px;object-fit:contain;border-radius:10px;display:none"/>
+      
+      <!-- Answer (hidden by default) -->
+      <div id="paper-answer-wrap" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">✅ الإجابة الكاملة:</div>
+        <div id="paper-card-answer" style="font-size:14px;color:var(--text2);line-height:1.8;white-space:pre-wrap"></div>
+        <div id="paper-card-link" style="display:none;margin-top:8px;padding:10px;background:var(--bg4);border-radius:8px;font-size:12px;color:var(--text2)"></div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div id="paper-show-btn-wrap">
+      <button onclick="paperShowAnswer()" style="width:100%;padding:15px;border-radius:var(--r);background:var(--bg4);border:1px solid var(--border2);color:var(--text2);font-size:15px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif">
+        👁 اضغط بعد الحل لرؤية الإجابة
+      </button>
+    </div>
+
+    <div id="paper-rate-btns" style="display:none;grid-template-columns:repeat(4,1fr);gap:8px">
+      <button onclick="paperRate(0)" style="padding:14px 4px;border-radius:var(--rs);background:#e0555522;border:1px solid var(--red);color:var(--red);font-size:12px;font-weight:800;cursor:pointer;font-family:'Tajawal',sans-serif;text-align:center">
+        😔<br>لم أعرف
+      </button>
+      <button onclick="paperRate(1)" style="padding:14px 4px;border-radius:var(--rs);background:#e0783022;border:1px solid var(--orange);color:var(--orange);font-size:12px;font-weight:800;cursor:pointer;font-family:'Tajawal',sans-serif;text-align:center">
+        😕<br>صعب
+      </button>
+      <button onclick="paperRate(3)" style="padding:14px 4px;border-radius:var(--rs);background:#4a8fe822;border:1px solid var(--blue);color:var(--blue);font-size:12px;font-weight:800;cursor:pointer;font-family:'Tajawal',sans-serif;text-align:center">
+        😊<br>جيد
+      </button>
+      <button onclick="paperRate(5)" style="padding:14px 4px;border-radius:var(--rs);background:#3dd68c22;border:1px solid var(--green);color:var(--green);font-size:12px;font-weight:800;cursor:pointer;font-family:'Tajawal',sans-serif;text-align:center">
+        😄<br>سهل
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -791,6 +851,7 @@ function showScreen(name){
   if(name==='home')    renderHome();
   if(name==='library') renderLibrary();
   if(name==='ai')      renderAI();
+  if(name==='paper')   {} // rendered by startPaperMode
 }
 
 // ══════════════════════════════════════════════════
@@ -1907,6 +1968,139 @@ function confirmImport(){
   document.getElementById('import-confirm-btn').onclick = ()=>{ closeModal('import-modal'); renderHome(); };
   showToast(`📥 تم استيراد ${totalImported} بطاقة!`);
   importData = null;
+}
+
+// ══════════════════════════════════════════════════
+// PAPER MODE — حل على ورقة + تقييم ذاتي
+// ══════════════════════════════════════════════════
+let paperQueue = [];
+let paperIdx = 0;
+let paperScores = { good: 0, bad: 0 };
+
+function startPaperMode(){
+  // Get all due items + important ones
+  const all = getAllItems();
+  if(!all.length){ showToast('⚠️ أضف بطاقات أولاً'); return; }
+
+  // Priority: due items first, then by importance
+  let pool = all.filter(isDue).sort((a,b)=>(b.importance||1)-(a.importance||1));
+  if(pool.length < 3){
+    const extra = all.filter(i=>!isDue(i)).sort((a,b)=>(b.importance||1)-(a.importance||1));
+    pool = [...pool, ...extra].slice(0, 15);
+  } else {
+    pool = pool.slice(0, 15);
+  }
+
+  // Shuffle
+  pool = pool.sort(()=>Math.random()-.5);
+  paperQueue = pool;
+  paperIdx = 0;
+  paperScores = { good: 0, bad: 0 };
+
+  showScreen('paper');
+  renderPaperCard();
+}
+
+function renderPaperCard(){
+  if(paperIdx >= paperQueue.length){ paperDone(); return; }
+
+  const card = paperQueue[paperIdx];
+  const total = paperQueue.length;
+  const pct = Math.round(paperIdx/total*100);
+
+  // Update progress
+  document.getElementById('paper-progress-fill').style.width = pct+'%';
+  document.getElementById('paper-counter').textContent = `${paperIdx+1}/${total}`;
+  document.getElementById('paper-q-num').textContent = `سؤال ${paperIdx+1} من ${total}`;
+  document.getElementById('paper-score-display').textContent = `✅ ${paperScores.good}  ❌ ${paperScores.bad}`;
+
+  // Card path
+  const f = DB.folders[card.folderId];
+  document.getElementById('paper-card-path').textContent = f ? f.emoji+' '+getFolderPath(card.folderId) : '';
+
+  // Card type
+  const typeLabels = {note:'📝 ملاحظة',qa:'❓ سؤال/جواب',concept:'💡 مفهوم',technique:'⚡ تقنية',summary:'📋 ملخص',link:'🔗 ربط'};
+  document.getElementById('paper-card-type').textContent = typeLabels[card.type]||'📝';
+
+  // Question
+  document.getElementById('paper-card-question').textContent = card.title;
+
+  // Image
+  const img = document.getElementById('paper-card-img');
+  if(card.imageData){ img.src=card.imageData; img.style.display='block'; }
+  else { img.style.display='none'; }
+
+  // Hide answer
+  document.getElementById('paper-answer-wrap').style.display = 'none';
+  document.getElementById('paper-show-btn-wrap').style.display = 'block';
+  document.getElementById('paper-rate-btns').style.display = 'none';
+}
+
+function paperShowAnswer(){
+  const card = paperQueue[paperIdx];
+
+  // Show answer
+  document.getElementById('paper-card-answer').textContent = card.body;
+  const linkEl = document.getElementById('paper-card-link');
+  if(card.linkConcept){ linkEl.textContent = '🔗 '+card.linkConcept; linkEl.style.display='block'; }
+  else { linkEl.style.display='none'; }
+
+  document.getElementById('paper-answer-wrap').style.display = 'block';
+  document.getElementById('paper-show-btn-wrap').style.display = 'none';
+  document.getElementById('paper-rate-btns').style.display = 'grid';
+
+  // Scroll to answer
+  document.getElementById('paper-answer-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function paperRate(quality){
+  const card = paperQueue[paperIdx];
+
+  // Update SM-2
+  const updated = sm2(card, quality);
+  DB.items[card.id] = {...DB.items[card.id], ...updated};
+
+  // Track score
+  if(quality >= 3) paperScores.good++;
+  else paperScores.bad++;
+
+  // XP
+  DB.totalXP = (DB.totalXP||0) + (quality >= 3 ? 5 : 2);
+  saveDB();
+
+  // Next card
+  paperIdx++;
+  renderPaperCard();
+}
+
+function paperDone(){
+  const total = paperQueue.length;
+  const pct = Math.round(paperScores.good/total*100);
+  const emoji = pct>=80?'🏆':pct>=60?'✅':pct>=40?'📈':'💪';
+  const msg = pct>=80?'أداء رائع — استمر!':pct>=60?'جيد جداً — راجع ما أخطأت فيه':pct>=40?'جيد — تحتاج مراجعة أكثر':'تحتاج تركيز أكبر — لا تستسلم!';
+
+  document.getElementById('screen-paper').querySelector('div[style*="flex:1"]').innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:20px">
+      <div style="font-size:64px">${emoji}</div>
+      <div style="font-size:22px;font-weight:900">انتهت الجلسة!</div>
+      <div style="font-size:48px;font-weight:900;color:var(--gold)">${paperScores.good}/${total}</div>
+      <div style="background:var(--bg3);border-radius:var(--r);padding:16px;width:100%">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="background:var(--bg4);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:900;color:var(--green)">${paperScores.good}</div>
+            <div style="font-size:11px;color:var(--text3)">✅ عرفتها</div>
+          </div>
+          <div style="background:var(--bg4);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:900;color:var(--red)">${paperScores.bad}</div>
+            <div style="font-size:11px;color:var(--text3)">❌ لم أعرفها</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2)">${msg}</div>
+      </div>
+      <button onclick="startPaperMode()" style="width:100%;padding:14px;border-radius:var(--r);background:var(--purple);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif">🔄 جولة جديدة</button>
+      <button onclick="showScreen('home')" style="width:100%;padding:14px;border-radius:var(--r);background:var(--bg4);border:1px solid var(--border2);color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif">🏠 الرئيسية</button>
+    </div>
+  `;
 }
 
 // ── Service Worker (آخر شيء) ──
